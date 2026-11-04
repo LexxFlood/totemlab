@@ -41,15 +41,6 @@
   pointer-events: none;
 }
 
-.duo-product model-viewer {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  --poster-color: transparent;
-}
-
-.duo-product model-viewer::part(default-poster) { background-size: auto 88%; }
-
 .duo-model-link {
   position: relative;
   border: 1px solid #77301644;
@@ -96,10 +87,8 @@
   background: radial-gradient(circle at 65% 30%, #fff1cc, #f39459 76%);
 }
 
-.duo-product model-viewer,
-.duo-fallback { grid-area: 1 / 1; }
-
-.duo-fallback {
+.duo-image {
+  grid-area: 1 / 1;
   position: relative;
   align-self: center;
   width: 100%;
@@ -108,6 +97,4 @@
   pointer-events: none;
 }
 
-.duo-product:not(.duo-3d-ready) model-viewer { opacity: 0; pointer-events: none; }
-.duo-3d-ready .duo-fallback { visibility: hidden; }
 .duo-model-link { grid-area: 2 / 1; }
