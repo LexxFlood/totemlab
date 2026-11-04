@@ -6,7 +6,7 @@
   padding: clamp(28px, 4.2vw, 54px) 0 24px;
   border-radius: clamp(22px, 3vw, 42px);
   color: #411909;
-  background: radial-gradient(ellipse at 48% 26%, #fff0c9 0%, #ffd18c 47%, #f68c52 100%);
+  background: radial-gradient(ellipse at 50% 27%, #ffe4be 0%, #ffab70 49%, #ff5a1f 100%);
   text-align: center;
 }
 
@@ -37,7 +37,7 @@
   transform: translate(-50%, -50%);
   font: 750 clamp(48px, 11.5vw, 164px)/.9 var(--font-display, Georgia, serif);
   letter-spacing: -.065em;
-  color: #a63b171e;
+  color: #a63b1738;
   pointer-events: none;
 }
 
@@ -61,16 +61,6 @@
   .duo-model-link { padding: 9px 13px; min-height: 44px; }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .duo-intro { animation: duo-arrive .68s ease-out both; }
-  .duo-product { animation: duo-arrive .85s cubic-bezier(.2,.75,.25,1) .12s both; }
-  .duo-classic { animation-delay: .24s; }
-  @keyframes duo-arrive {
-    from { opacity: 0; transform: translateY(28px) scale(.96); }
-    to { opacity: 1; transform: none; }
-  }
-}
-
 .duo-product::before {
   content: "";
   position: absolute;
@@ -80,11 +70,11 @@
   top: 46%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff9e5, #ffbf77 72%);
+  background: radial-gradient(circle at 35% 30%, #fff2d7, #ff9c58 76%);
   pointer-events: none;
 }
 .duo-classic::before {
-  background: radial-gradient(circle at 65% 30%, #fff1cc, #f39459 76%);
+  background: radial-gradient(circle at 65% 30%, #ffe5bd, #ff7138 76%);
 }
 
 .duo-image {
@@ -98,3 +88,48 @@
 }
 
 .duo-model-link { grid-area: 2 / 1; }
+
+/* Reveal each circular stage first, then bring the product forward. */
+@media (prefers-reduced-motion: no-preference) {
+  .duo-product { --duo-delay: 0ms; }
+  .duo-classic { --duo-delay: 135ms; }
+
+  .duo-product::before {
+    animation: duo-circle-in 820ms cubic-bezier(.16, 1, .3, 1) var(--duo-delay) both;
+  }
+
+  .duo-image {
+    animation: duo-product-in 900ms cubic-bezier(.16, 1, .3, 1) calc(var(--duo-delay) + 130ms) both;
+  }
+
+  .duo-name {
+    animation: duo-name-in 620ms ease-out calc(var(--duo-delay) + 340ms) both;
+  }
+
+  .duo-intro, .duo-model-link, .duo-footer {
+    animation: duo-copy-in 650ms cubic-bezier(.16, 1, .3, 1) 530ms both;
+  }
+
+  .duo-model-link { animation-delay: calc(var(--duo-delay) + 650ms); }
+  .duo-footer { animation-delay: 850ms; }
+
+  @keyframes duo-circle-in {
+    from { clip-path: circle(0 at 50% 50%); }
+    to { clip-path: circle(72% at 50% 50%); }
+  }
+
+  @keyframes duo-product-in {
+    from { opacity: 0; transform: translateY(28px) scale(.68); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @keyframes duo-name-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes duo-copy-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+}
