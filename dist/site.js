@@ -17,7 +17,7 @@ if (hero.loaded) introduceHeroModel();
 else hero.addEventListener('load', introduceHeroModel, {once: true});
 
 hero.addEventListener('error',()=>{$('#hero-hint').textContent='Modelo indisponível. Tente recarregar.'});
-function openLab(c){if(c)setConfig(c);const frame=$('#config-frame');if(!frame.src){frame.src=configPath(selected)}else if(c){frame.contentWindow.postMessage({type:'totemlab:apply',config:selected},location.origin)}frame.hidden=false;$('#lab-poster').hidden=true;$('#laboratorio').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
+function openLab(c, shouldScroll = true){if(c)setConfig(c);const frame=$('#config-frame');if(!frame.src){frame.src=configPath(selected)}else if(c){frame.contentWindow.postMessage({type:'totemlab:apply',config:selected},location.origin)}frame.hidden=false;$('#lab-poster').hidden=true;if (shouldScroll) $('#laboratorio').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
 $('#start-lab').onclick=()=>openLab();$$('[data-configure]').forEach(b=>b.onclick=()=>openLab({...selected,model:b.dataset.configure,support:b.dataset.configure==='classic'?1:0}));
 window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==$('#config-frame').contentWindow)return;if(e.data?.type==='totemlab:config'||e.data?.type==='totemlab:quote'){setConfig(e.data.config);if(e.data.type==='totemlab:quote')$('#orcamento').scrollIntoView({behavior:'smooth'})}});
 $('#quote-model').onchange=e=>{setConfig({...selected,model:e.target.value});const f=$('#config-frame');if(f.src)f.contentWindow.postMessage({type:'totemlab:apply',config:selected},location.origin)};

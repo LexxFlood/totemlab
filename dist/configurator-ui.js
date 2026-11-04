@@ -39,7 +39,23 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.orderFullscr
 const tlControls=controls;controls=function(open){if(open&&window.kioskView)zoomToOrder(false);tlControls(open);if(open)tlId('tl-tab-'+tlStep).focus({preventScroll:true})};document.addEventListener('keydown',e=>{if(e.key==='Escape')tlTools.open=false});
 tlSync();tlSetStep(0);draw();
 
-window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent||e.data?.type!=='totemlab:step')return;const n=e.data.step;if(n===3)openSpace();else if(n===2)zoomToOrder(true);else{controls(true);document.getElementById('tl-tab-'+(n===1?2:0)).click()}});
+window.addEventListener('message', event => {
+  if (event.origin !== location.origin || event.source !== parent || event.data?.type !== 'totemlab:step') return;
+  const step = event.data.step;
+  if (![0, 1, 2, 3].includes(step)) return;
+  if (step === 3) {
+    openSpace();
+    return;
+  }
+  if (spaceDialog.open) closeSpace();
+  if (step === 2) {
+    zoomToOrder(true);
+    return;
+  }
+  if (window.kioskView) zoomToOrder(false);
+  tlControls(true);
+  tlSetStep(step === 1 ? 2 : 0);
+});
 
 // Keep the touchscreen usable while offering an explicit orbit mode.
 const orbitTools=document.createElement('div');orbitTools.className='tl-orbit-tools';orbitTools.innerHTML='<button id="tl-orbit-mode" aria-pressed="false">Explorar 3D</button><button id="tl-orbit-reset" hidden>Centralizar</button><small id="tl-orbit-help" hidden>Arraste para girar · pinça para zoom · dois dedos para mover</small>';document.body.append(orbitTools);

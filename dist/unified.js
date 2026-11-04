@@ -3,5 +3,25 @@ const steps=[...document.querySelectorAll('.process-grid>div')];
 let journeyPending=false;
 function updateJourney(){journeyPending=false;const grid=document.querySelector('.process-grid');if(!grid)return;const r=grid.getBoundingClientRect();const mobile=matchMedia('(max-width:700px)').matches;const total=Math.max(0,Math.min(steps.length,(innerHeight*.85-r.top)/Math.max(1,mobile?r.height:innerHeight*.6)*steps.length));steps.forEach((step,i)=>{const fill=Math.max(0,Math.min(1,total-i));step.style.setProperty('--step-fill',fill);step.classList.toggle('current',fill>0)});}
 addEventListener('scroll',()=>{if(!journeyPending){journeyPending=true;requestAnimationFrame(updateJourney)}},{passive:true});addEventListener('resize',updateJourney);updateJourney();
-function studioAction(index){openLab();document.querySelectorAll('[data-studio]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.studio)===index)));const frame=document.querySelector('#config-frame');const run=()=>frame.contentWindow.postMessage({type:'totemlab:step',step:index},location.origin);if(frame.contentDocument?.querySelector('#tl-next'))run();else frame.addEventListener('load',run,{once:true})}
-document.querySelectorAll('[data-studio]').forEach(b=>b.onclick=()=>studioAction(Number(b.dataset.studio)));document.querySelector('#environment-cta').onclick=()=>studioAction(3);
+function studioAction(index, shouldScroll = false) {
+  openLab(undefined, shouldScroll);
+  document.querySelectorAll('[data-studio]').forEach(button => {
+    button.setAttribute('aria-pressed', String(Number(button.dataset.studio) === index));
+  });
+
+  const frame = document.querySelector('#config-frame');
+  function sendStep() {
+    frame.contentWindow.postMessage({type: 'totemlab:step', step: index}, location.origin);
+  }
+
+  if (frame.contentDocument?.querySelector('#tl-next')) {
+    frame.onload = null;
+    sendStep();
+  } else {
+    frame.onload = () => {
+      frame.onload = null;
+      sendStep();
+    };
+  }
+}
+document.querySelectorAll('[data-studio]').forEach(b=>b.onclick=()=>studioAction(Number(b.dataset.studio)));document.querySelector('#environment-cta').onclick=()=>studioAction(3, true);
