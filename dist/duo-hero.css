@@ -95,3 +95,19 @@
 .duo-classic::before {
   background: radial-gradient(circle at 65% 30%, #fff1cc, #f39459 76%);
 }
+
+.duo-product model-viewer,
+.duo-fallback { grid-area: 1 / 1; }
+
+.duo-fallback {
+  position: relative;
+  align-self: center;
+  width: 100%;
+  height: 88%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.duo-product:not(.duo-3d-ready) model-viewer { opacity: 0; pointer-events: none; }
+.duo-3d-ready .duo-fallback { visibility: hidden; }
+.duo-model-link { grid-area: 2 / 1; }
