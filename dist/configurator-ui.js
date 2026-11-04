@@ -339,7 +339,12 @@ if (quickLookLink.relList.supports('ar')) {
   const prepare = document.createElement('button');
   prepare.type = 'button';
   prepare.className = 'space-primary';
-  prepare.textContent = 'Preparar demonstração no Quick Look';
+  prepare.textContent = 'Testar pedido em RA';
+  const nativePreview = spEl('space-ar');
+  const updateNativePreview = new MutationObserver(() => {
+    if (nativePreview.textContent === 'Abrir câmera em RA ↗') nativePreview.textContent = 'Só visualizar o totem em RA ↗';
+  });
+  updateNativePreview.observe(nativePreview, {childList:true});
   const poster = document.createElement('img');
   poster.alt = 'Abrir demonstração de pedido no Quick Look';
   poster.width = 44;
@@ -348,7 +353,9 @@ if (quickLookLink.relList.supports('ar')) {
   quickLookLink.hidden = true;
   quickLookLink.setAttribute('aria-label', poster.alt);
   quickLookLink.title = poster.alt;
-  spEl('space-ar').after(prepare, quickLookLink);
+  quickLookLink.className = 'space-quicklook-demo';
+  quickLookLink.dataset.label = 'Abrir pedido no Quick Look ↗';
+  nativePreview.before(prepare, quickLookLink);
   const launchHint = document.createElement('p');
   launchHint.hidden = true;
   quickLookLink.after(launchHint);
@@ -372,7 +379,7 @@ if (quickLookLink.relList.supports('ar')) {
     spaceMessage('Preparando o pedido de demonstração…');
     try {
       const slim = totemModel === 'slim';
-      const {prepareQuickLookDemo} = await import('./quicklook-demo.js');
+      const {prepareQuickLookDemo} = await import('./quicklook-demo.js?v=2');
       const url = await prepareQuickLookDemo(spaceViewer, slim);
       if (current !== generation) { URL.revokeObjectURL(url); return; }
       demoURL = url;
@@ -381,7 +388,7 @@ if (quickLookLink.relList.supports('ar')) {
       quickLookLink.download = 'totemlab-pedido-demo.usdz';
       quickLookLink.hidden = false;
       prepare.hidden = true;
-      launchHint.textContent = 'Toque na imagem do totem para abrir a demonstração. Na RA, toque no visor para iniciar o pedido e ver a notinha sair.';
+      launchHint.textContent = 'Abra o pedido no Quick Look. Quando o visor mostrar Monte seu pedido, toque nele para iniciar a demonstração.';
       launchHint.hidden = false;
       spaceMessage('Demonstração pronta.');
       quickLookLink.focus();

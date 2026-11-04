@@ -106,7 +106,7 @@ function demoMesh(name, points, samples = '') {
 
 function addDemoScene(usd, slim) {
   // The GLB exports this named LCD node with the original model's transforms.
-  const screen = /^(\s*)def Xform "Interface_?de_?autoatendimento(?:_\d+)?"\s*\(/m.exec(usd);
+  const screen = /^(\s*)def Xform "(Interface_?de_?autoatendimento(?:_\d+)?)"\s*\(/m.exec(usd);
   if (!screen) throw Error('Visor do totem não encontrado');
   const indent = screen[1].split('\n').at(-1).length;
   const parents = [];
@@ -122,7 +122,6 @@ function addDemoScene(usd, slim) {
   const slide = samples => `double3 xformOp:translate.timeSamples = { ${samples} }
     uniform token[] xformOpOrder = ["xformOp:translate"]`;
   const mesh = [
-    demoMesh('DemoMenu', quad.map(([x,y,z]) => [x,y,z+.002])),
     demoMesh('DemoPayment', quad, slide('0:(0,0,-0.01), 20:(0,0,-0.01), 21:(0,0,0.004)')),
     demoMesh('DemoDone', quad, slide('0:(0,0,-0.012), 48:(0,0,-0.012), 49:(0,0,0.006)')),
     demoMesh('DemoReceipt', (() => {
@@ -130,7 +129,13 @@ function addDemoScene(usd, slim) {
       return [[x-.033,y-.105,z],[x+.033,y-.105,z],[x+.033,y,z],[x-.033,y,z]];
     })(), slide('0:(0,0.106,-0.08), 49:(0,0.106,-0.08), 55:(0,0.106,0.04), 82:(0,0,0.04)'))
   ].join('\n');
-  usd = usd.slice(0,screen.index) + '\n' + mesh + '\n' + usd.slice(screen.index);
+  const screenSource = usd.slice(screen.index);
+  const binding = /rel material:binding = <\/Materials\/[^>]+>/;
+  const screenEnd = screenSource.indexOf('}');
+  const screenBody = screenSource.slice(0, screenEnd);
+  if (screenEnd < 0 || !binding.test(screenBody)) throw Error('Material do visor não encontrado');
+  usd = usd.slice(0,screen.index) + '\n' + mesh + '\n' +
+    screenBody.replace(binding, 'rel material:binding = </Materials/DemoMenu>') + screenSource.slice(screenEnd);
   usd = usd.replace('upAxis = "Y"', 'upAxis = "Y"\n autoPlay = false\n startTimeCode = 0\n endTimeCode = 95\n timeCodesPerSecond = 30');
   usd = usd.replace(/def "Materials"\s*\{|def Scope "Materials"\s*\{/,
     match => match + '\n' + ['DemoMenu','DemoPayment','DemoDone','DemoReceipt'].map(name => demoMaterial(name,name+'.png')).join('\n'));
@@ -146,7 +151,7 @@ def Preliminary_Behavior "TotemOrderDemo" {
   rel actions = [ <Play> ]
   def Preliminary_Trigger "Tap" {
     uniform token info:id = "TapGesture"
-    rel affectedObjects = [ ${path('DemoMenu')}, ${path('DemoDone')} ]
+    rel affectedObjects = [ ${path(screen[2])}, ${path('DemoDone')} ]
   }
   def Preliminary_Action "Play" {
     uniform token info:id = "StartAnimation"

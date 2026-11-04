@@ -139,3 +139,17 @@ body.tl-screen-full {
   }
   .tl-demo-mode:not(.tl-screen-full) #tl-screen-toggle { top: 110px; }
 }
+
+.space-quicklook-demo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #a63813;
+  color: #fff;
+  font-weight: 750;
+}
+.space-quicklook-demo[hidden] { display: none; }
+.space-quicklook-demo::after { content: attr(data-label); }
+.space-quicklook-demo img { object-fit: contain; }
