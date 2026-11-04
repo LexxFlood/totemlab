@@ -12,14 +12,7 @@
 
 .classic-preview{display:block;width:100%;height:100%;min-height:350px;--poster-color:transparent}.lab-poster>.classic-preview{height:460px}.product-visual>.classic-preview{height:100%;position:absolute;inset:0}@media(max-width:700px){.lab-poster>.classic-preview{height:350px}}
 
-/* Cardápio: títulos expressivos e leitura clara nos controles. */
-body {
-  font-family: "Nunito Sans", "Segoe UI", Arial, sans-serif;
-}
-
 h1, h2, h3 {
-  font-family: "Fraunces", Georgia, serif;
-  font-weight: 750;
   letter-spacing: -.035em;
 }
 
@@ -28,9 +21,24 @@ h1, h2, h3 {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .hero-copy > * {
+    animation: hero-copy-arrival 620ms ease-out both;
+  }
+
+  .hero-copy h1 { animation-delay: 80ms; }
+  .hero-copy > p { animation-delay: 160ms; }
+  .hero-copy .actions { animation-delay: 240ms; }
+  .hero-copy .hero-note { animation-delay: 300ms; }
+  .hero .stage { animation: hero-copy-arrival 680ms ease-out 140ms both; }
+
   #hero-model.hero-model-enter {
     animation: hero-model-arrival 760ms cubic-bezier(.2, .75, .25, 1);
   }
+}
+
+@keyframes hero-copy-arrival {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes hero-model-arrival {

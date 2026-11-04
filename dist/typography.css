@@ -1,0 +1,19 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,750;1,650&family=Nunito+Sans:wght@400..800&display=swap");
+
+:root {
+  --font-body: "Nunito Sans", "Segoe UI", Arial, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 750;
+}
+
+button, input, select, textarea {
+  font-family: var(--font-body);
+}
