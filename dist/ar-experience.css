@@ -5,3 +5,40 @@ body.space-open{overflow:hidden}#space-dialog{width:min(1160px,calc(100vw - 40px
 @media(max-width:760px){#space-dialog .space-settings:has(#space-manual-controls:not([hidden])){height:254px;max-height:46dvh}#space-dialog .space-settings:has(#space-manual-controls:not([hidden])):has(#space-fine-controls[open]){max-height:46dvh}}
 
 #space-stage model-viewer{z-index:2}#space-stage>video,#space-stage>.space-photo{z-index:0}.sp-alternatives .sp-recommended{order:-1}
+
+.space-order-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: #181611a8;
+  isolation: isolate;
+}
+
+.space-order-overlay #kiosk-screen-layer { position: absolute; z-index: 1; }
+.space-order-overlay #kiosk-screen { border-radius: 20px; touch-action: pan-y; }
+.space-order-close, .space-order-paper {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.space-order-close { top: 8px; min-height: 44px; white-space: nowrap; }
+.space-order-paper {
+  top: 64px;
+  width: min(330px, calc(100% - 24px));
+  max-height: calc(100% - 78px);
+  overflow: auto;
+  padding: 16px;
+  background: #fffdf4;
+  color: #302b28;
+  box-shadow: 0 12px 48px #0006;
+}
+.space-order-paper pre { white-space: pre-wrap; font-size: 13px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .space-order-paper:not([hidden]) { animation: space-paper-feed .45s ease-out both; }
+  @keyframes space-paper-feed {
+    from { clip-path: inset(0 0 100%); }
+    to { clip-path: inset(0); }
+  }
+}

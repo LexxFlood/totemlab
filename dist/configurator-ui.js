@@ -128,3 +128,125 @@ const orbitTools=document.createElement('div');orbitTools.className='tl-orbit-to
 function setFreeOrbit(enabled){freeOrbit=enabled;document.body.classList.toggle('tl-free-orbit',enabled);document.getElementById('tl-orbit-mode').setAttribute('aria-pressed',enabled);document.getElementById('tl-orbit-mode').textContent=enabled?'Usar tela do totem':'Explorar 3D';document.getElementById('tl-orbit-reset').hidden=!enabled;document.getElementById('tl-orbit-help').hidden=!enabled;if(enabled){tlSetFullscreen(false);zoomToOrder(false);window.receiptView=null;window.kioskView=null;}draw()}
 document.getElementById('tl-orbit-mode').onclick=()=>{if(freeOrbit)zoomToOrder(true);else setFreeOrbit(true)};document.getElementById('tl-orbit-reset').onclick=()=>{window.tlPanX=0;window.tlPanY=0;az=.45;el=.15;scale=totemModel==='slim'?1.06:showSupport?1.25:.94;draw()};
 const orbitMove=canvas.onpointermove;canvas.onpointermove=e=>{if(freeOrbit&&pointers.has(e.pointerId)){const old=pointers.get(e.pointerId);if(pointers.size===2){window.tlPanX=(window.tlPanX||0)-(e.clientX-old[0])/canvas.clientHeight*scale;window.tlPanY=(window.tlPanY||0)+(e.clientY-old[1])/canvas.clientHeight*scale}else if(e.shiftKey||e.buttons===2){window.tlPanX=(window.tlPanX||0)-(e.clientX-old[0])/canvas.clientHeight*scale*2;window.tlPanY=(window.tlPanY||0)+(e.clientY-old[1])/canvas.clientHeight*scale*2;pointers.set(e.pointerId,[e.clientX,e.clientY]);draw();return}}orbitMove(e)};canvas.addEventListener('contextmenu',e=>{if(freeOrbit)e.preventDefault()});
+
+// The web camera can host the same live order screen used by Experimente.
+const spaceOrderHome = orderLayer.parentNode;
+const spaceOrderButton = document.createElement('button');
+spaceOrderButton.type = 'button';
+spaceOrderButton.className = 'space-primary';
+spaceOrderButton.textContent = 'Testar pedido no ambiente ↗';
+spEl('space-manual-controls').prepend(spaceOrderButton);
+
+const spaceOrderOverlay = document.createElement('section');
+spaceOrderOverlay.className = 'space-order-overlay';
+spaceOrderOverlay.hidden = true;
+spaceOrderOverlay.setAttribute('aria-label', 'Pedido demonstrativo no ambiente');
+spaceOrderOverlay.innerHTML = '<button type="button" class="space-order-close">Voltar ao ambiente ×</button><div class="space-order-paper" role="status" hidden></div>';
+spaceDialog.append(spaceOrderOverlay);
+const spaceOrderBack = spaceOrderOverlay.querySelector('.space-order-close');
+const spaceOrderPaper = spaceOrderOverlay.querySelector('.space-order-paper');
+
+const positionStudioOrder = positionOrderScreen;
+positionOrderScreen = function() {
+  if (spaceOrderOverlay.hidden) {
+    positionStudioOrder();
+    return;
+  }
+  const width = spaceOrderOverlay.clientWidth;
+  const height = spaceOrderOverlay.clientHeight;
+  const scale = Math.max(.001, Math.min((width - 20) / 720, (height - 70) / 1440));
+  Object.assign(orderLayer.style, {
+    display: 'block', left: '0', top: '0', width: width + 'px', height: height + 'px'
+  });
+  orderPlane.style.transform = `matrix(${scale},0,0,${scale},${(width - 720 * scale) / 2},${56 + (height - 70 - 1440 * scale) / 2})`;
+};
+
+spaceOrderButton.onclick = () => {
+  spSetMode('look');
+  if (freeOrbit) setFreeOrbit(false);
+  spaceOrderOverlay.hidden = false;
+  spaceOrderOverlay.append(orderLayer);
+  positionOrderScreen();
+  spaceOrderBack.focus({preventScroll:true});
+};
+
+function leaveSpaceOrder() {
+  if (spaceOrderOverlay.hidden) return;
+  spaceOrderOverlay.hidden = true;
+  spaceOrderPaper.hidden = true;
+  spaceOrderHome.append(orderLayer);
+  positionOrderScreen();
+  if (spaceDialog.open) spaceOrderButton.focus({preventScroll:true});
+}
+spaceOrderBack.onclick = leaveSpaceOrder;
+spaceDialog.addEventListener('close', leaveSpaceOrder);
+spaceDialog.addEventListener('cancel', event => {
+  if (!spaceOrderOverlay.hidden) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    leaveSpaceOrder();
+  }
+}, true);
+
+const printStudioOrder = window.printOrderReceipt;
+window.printOrderReceipt = function(order) {
+  if (spaceOrderOverlay.hidden) {
+    printStudioOrder(order);
+    return;
+  }
+  if (!order) return;
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.textContent = 'Fechar notinha ×';
+  const receipt = document.createElement('pre');
+  const lines = order.items.map(item => item.quantity + '× ' + item.name + '  ' + money(item.unit * item.quantity));
+  receipt.textContent = ['LAB KITCHEN', 'Pedido #' + order.number, '', ...lines, '', 'Total  ' + money(order.total), '', 'DEMONSTRAÇÃO · SEM VALOR FISCAL'].join('\n');
+  spaceOrderPaper.replaceChildren(close, receipt);
+  spaceOrderPaper.hidden = false;
+  close.onclick = () => { spaceOrderPaper.hidden = true; spaceOrderBack.focus(); };
+  close.focus({preventScroll:true});
+};
+
+spEl('space-size').min = '15';
+spEl('space-confirm').textContent = 'Fixar nesta posição ✓';
+const spaceZoomOut = document.createElement('button');
+spaceZoomOut.type = 'button';
+spaceZoomOut.textContent = '− Diminuir zoom';
+spEl('space-fine-controls').before(spaceZoomOut);
+spaceZoomOut.onclick = () => {
+  spSaveHistory();
+  spEl('space-size').value = Math.max(15, Math.round(spaceState.scale * 100) - 10);
+  updateSpaceSize();
+};
+
+function configureWallViewer() {
+  if (!spaceViewer) return;
+  const height = totemModel === 'slim' ? 1.8 : showSupport ? 2.011 : 1.47;
+  const scale = String(1.8 / height);
+  spaceViewer.setAttribute('scale', [scale, scale, scale].join(' '));
+  spaceViewer.setAttribute('ar-placement', 'wall');
+  spaceViewer.setAttribute('ar-scale', 'auto');
+  spEl('space-summary').textContent = 'Totem ' + (totemModel === 'slim' ? 'Slim' : 'Classic') + ' · altura inicial de 1,80 m';
+}
+
+const nativeSpaceStatus = updateSpaceSupport;
+updateSpaceSupport = function() {
+  nativeSpaceStatus();
+  if (!spaceDialog.open || !spaceViewer?.loaded) return;
+  configureWallViewer();
+  spEl('space-ar-note').textContent = 'Aponte para uma parede na RA. Para testar pedidos e a notinha, use a câmera ou uma foto dentro do site.';
+};
+const startNativeSpace = spEl('space-ar').onclick;
+spEl('space-ar').onclick = () => {
+  configureWallViewer();
+  startNativeSpace();
+};
+new MutationObserver(() => {
+  if (spaceDialog.open) configureWallViewer();
+}).observe(spaceStage, {childList:true});
+spaceStage.addEventListener('ar-status', event => {
+  if (event.detail.status !== 'session-started') return;
+  const guide = spaceViewer?.querySelector('.sp-native-guide');
+  if (guide) guide.textContent = 'Aponte o celular para uma parede.';
+  spaceMessage('Aponte o celular para uma parede.');
+}, true);
