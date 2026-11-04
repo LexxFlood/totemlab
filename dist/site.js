@@ -8,6 +8,53 @@ try{const saved=JSON.parse(localStorage.getItem('totem-studio-config'));if(saved
 const params=new URLSearchParams(location.search);if(params.has('model')&&!params.has('quote'))location.replace('./configurador.html?'+params.toString());if(params.has('quote')){try{setConfig(JSON.parse(params.get('quote')))}catch{}requestAnimationFrame(()=>$('#orcamento').scrollIntoView())}else setConfig(selected);
 $('.menu-btn').onclick=()=>{const open=$('#navigation').classList.toggle('open');$('.menu-btn').setAttribute('aria-expanded',open)};
 $$('#navigation a').forEach(a=>a.onclick=()=>{$('#navigation').classList.remove('open');$('.menu-btn').setAttribute('aria-expanded','false')});
+const heroOpening = $('.hero-opening');
+const mainHero = $('.hero-sequence > .hero');
+const heroModel = $('#hero-model');
+const heroImage = $('.hero-model-fallback');
+const heroStage = heroModel.parentElement;
+const heroHint = $('#hero-hint');
+
+if (!location.hash && !params.has('quote') && !params.has('model') &&
+    scrollY < 20 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  heroOpening.hidden = false;
+  mainHero.inert = true;
+  mainHero.parentElement.classList.add('hero-opening-active');
+  setTimeout(() => {
+    heroOpening.classList.add('hero-opening-exit');
+    mainHero.inert = false;
+    mainHero.parentElement.classList.remove('hero-opening-active');
+    setTimeout(() => { heroOpening.hidden = true; }, 550);
+  }, 2150);
+}
+
+async function showHeroModel() {
+  if (!await modelHasRendered(heroModel)) return;
+  heroStage.classList.add('hero-model-ready');
+  heroHint.textContent = 'Arraste para explorar em 360°';
+}
+heroModel.addEventListener('load', showHeroModel);
+if (heroModel.loaded) showHeroModel();
+heroModel.addEventListener('error', () => {
+  heroStage.classList.remove('hero-model-ready');
+  heroHint.textContent = 'Selecione um modelo';
+});
+
+for (const button of $$('[data-hero]')) {
+  button.onclick = () => {
+    if (button.getAttribute('aria-pressed') === 'true') return;
+    const model = button.dataset.hero;
+    const slim = model === 'slim';
+    heroStage.classList.remove('hero-model-ready');
+    heroHint.textContent = 'Selecione um modelo';
+    heroImage.src = './assets/' + model + '.png';
+    heroImage.alt = slim ? 'Totem Slim' : 'Totem Classic';
+    heroModel.alt = 'Modelo 3D do ' + heroImage.alt;
+    heroModel.src = './ar-models/' + (slim ? 'totem_slim_madeira_branca' : 'totem_com_suporte_madeira_branca') + '.glb?v=burger2';
+    $$('[data-hero]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+  };
+}
+
 function openLab(c, shouldScroll = true){if(c)setConfig(c);const frame=$('#config-frame');if(!frame.src){frame.src=configPath(selected)}else if(c){frame.contentWindow.postMessage({type:'totemlab:apply',config:selected},location.origin)}frame.hidden=false;$('#lab-poster').hidden=true;if (shouldScroll) $('#laboratorio').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
 $('#start-lab').onclick=()=>openLab();$$('[data-configure]').forEach(b=>b.onclick=()=>openLab({...selected,model:b.dataset.configure,support:b.dataset.configure==='classic'?1:0}));
 window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==$('#config-frame').contentWindow)return;if(e.data?.type==='totemlab:config'||e.data?.type==='totemlab:quote'){setConfig(e.data.config);if(e.data.type==='totemlab:quote')$('#orcamento').scrollIntoView({behavior:'smooth'})}});
@@ -25,23 +72,26 @@ let storyProgress=0,storyKind='';
 const storyFallback = $('.story-model-fallback');
 const storyStage = scene.parentElement;
 
-async function verifyStoryRender() {
-  const source = scene.src;
+async function modelHasRendered(viewer) {
+  const source = viewer.src;
   try {
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const frame = new Image();
-    frame.src = scene.toDataURL('image/png');
+    frame.src = viewer.toDataURL('image/png');
     await frame.decode();
-    if (scene.src !== source) return;
+    if (viewer.src !== source) return false;
     const sample = document.createElement('canvas');
     sample.width = sample.height = 24;
     const ctx = sample.getContext('2d', {willReadFrequently:true});
     ctx.drawImage(frame, 0, 0, 24, 24);
     const pixels = ctx.getImageData(0, 0, 24, 24).data;
-    if (pixels.some((value, index) => index % 4 === 3 && value > 96)) storyStage.classList.add('story-rendered');
+    return pixels.some((value, index) => index % 4 === 3 && value > 96);
   } catch {
-    // The product image remains visible if the browser cannot render the model.
+    return false;
   }
+}
+async function verifyStoryRender() {
+  if (await modelHasRendered(scene)) storyStage.classList.add('story-rendered');
 }
 
 function updateScroll(){ticking=false;const available=document.documentElement.scrollHeight-innerHeight;$('#scroll-progress').style.transform=`scaleX(${available>0?scrollY/available:0})`;if(!story)return;const rect=story.getBoundingClientRect();if(rect.bottom<0||rect.top>innerHeight)return;storyProgress=Math.max(0,Math.min(1,-rect.top/Math.max(1,rect.height-innerHeight)));const mobile = matchMedia('(max-width: 900px)').matches;
