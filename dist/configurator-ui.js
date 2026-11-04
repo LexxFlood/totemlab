@@ -146,34 +146,11 @@ spaceDialog.append(spaceOrderOverlay);
 const spaceOrderBack = spaceOrderOverlay.querySelector('.space-order-close');
 const spaceOrderPaper = spaceOrderOverlay.querySelector('.space-order-paper');
 
-const positionStudioOrder = positionOrderScreen;
-positionOrderScreen = function() {
-  if (spaceOrderOverlay.hidden) {
-    positionStudioOrder();
-    return;
-  }
-  const width = spaceOrderOverlay.clientWidth;
-  const height = spaceOrderOverlay.clientHeight;
-  const scale = Math.max(.001, Math.min((width - 20) / 720, (height - 70) / 1440));
-  Object.assign(orderLayer.style, {
-    display: 'block', left: '0', top: '0', width: width + 'px', height: height + 'px'
-  });
-  orderPlane.style.transform = `matrix(${scale},0,0,${scale},${(width - 720 * scale) / 2},${56 + (height - 70 - 1440 * scale) / 2})`;
-};
-
-spaceOrderButton.onclick = () => {
-  spSetMode('look');
-  if (freeOrbit) setFreeOrbit(false);
-  spaceOrderOverlay.hidden = false;
-  spaceOrderOverlay.append(orderLayer);
-  positionOrderScreen();
-  spaceOrderBack.focus({preventScroll:true});
-};
-
 function leaveSpaceOrder() {
   if (spaceOrderOverlay.hidden) return;
   spaceOrderOverlay.hidden = true;
   spaceOrderPaper.hidden = true;
+  cleanProjectedLCD();
   spaceOrderHome.append(orderLayer);
   positionOrderScreen();
   if (spaceDialog.open) spaceOrderButton.focus({preventScroll:true});
@@ -250,3 +227,96 @@ spaceStage.addEventListener('ar-status', event => {
   if (guide) guide.textContent = 'Aponte o celular para uma parede.';
   spaceMessage('Aponte o celular para uma parede.');
 }, true);
+
+// Track the four vertices of the LCD mesh in each room-preview GLB.
+const lcdSlots = ['hotspot-order-tl','hotspot-order-tr','hotspot-order-br','hotspot-order-bl'];
+let projectedOrderFrame = 0;
+let projectedOrderViewer;
+let projectedOrderSource;
+
+function installLCDHotspots(viewer) {
+  const source = viewer.getAttribute('src');
+  if (viewer === projectedOrderViewer && source === projectedOrderSource) return;
+  projectedOrderViewer = viewer;
+  projectedOrderSource = source;
+  viewer.querySelectorAll('[data-order-corner]').forEach(node => node.remove());
+  const lcdNode = totemModel === 'slim' ? 10 : showSupport ? 19 : 9;
+  const triangles = ['3 4 5 0 0 1', '0 1 2 0 0 1', '0 1 2 0 1 0', '0 1 2 1 0 0'];
+  lcdSlots.forEach((slot, index) => {
+    const corner = document.createElement('span');
+    corner.slot = slot;
+    corner.dataset.orderCorner = '';
+    corner.dataset.surface = lcdNode + ' 0 ' + triangles[index];
+    corner.setAttribute('aria-hidden', 'true');
+    viewer.append(corner);
+  });
+}
+
+// Perspective transform from the 720 × 1440 order plane to the projected LCD quad.
+function lcdProjection([a, b, c, d]) {
+  const x1 = b.x-c.x, x2 = d.x-c.x, x3 = a.x-b.x+c.x-d.x;
+  const y1 = b.y-c.y, y2 = d.y-c.y, y3 = a.y-b.y+c.y-d.y;
+  const determinant = x1*y2-x2*y1;
+  const winding = (b.x-a.x)*(d.y-a.y)-(b.y-a.y)*(d.x-a.x);
+  if (Math.abs(determinant) < .01 || winding < 4) return null;
+  const g = (x3*y2-x2*y3)/determinant, h = (x1*y3-x3*y1)/determinant;
+  return [
+    (b.x-a.x+g*b.x)/720, (b.y-a.y+g*b.y)/720, 0, g/720,
+    (d.x-a.x+h*d.x)/1440, (d.y-a.y+h*d.y)/1440, 0, h/1440,
+    0,0,1,0,a.x,a.y,0,1
+  ];
+}
+
+function positionProjectedOrder() {
+  if (!spaceViewer?.loaded) { orderLayer.style.display = 'none'; return; }
+  installLCDHotspots(spaceViewer);
+  const stage = spaceStage.getBoundingClientRect();
+  const view = spaceViewer.getBoundingClientRect();
+  const points = lcdSlots.map(slot => spaceViewer.queryHotspot(slot));
+  if (points.some(point => !point?.facingCamera || Math.abs(point.canvasPosition.z) > 1)) {
+    orderLayer.style.display = 'none';
+    return;
+  }
+  const matrix = lcdProjection(points.map(({canvasPosition: p}) => ({
+    x: view.left-stage.left+p.x*view.width/spaceViewer.clientWidth,
+    y: view.top-stage.top+p.y*view.height/spaceViewer.clientHeight
+  })));
+  if (!matrix || matrix.some(value => !Number.isFinite(value))) {
+    orderLayer.style.display = 'none';
+    return;
+  }
+  Object.assign(orderLayer.style, {display:'block',left:'0',top:'0',width:spaceStage.clientWidth+'px',height:spaceStage.clientHeight+'px'});
+  const transform = 'matrix3d(' + matrix.join(',') + ')';
+  if (orderPlane.style.transform !== transform) orderPlane.style.transform = transform;
+}
+
+const positionRoomOrder = positionOrderScreen;
+positionOrderScreen = function() {
+  if (!spaceOrderOverlay.hidden) positionProjectedOrder();
+  else positionRoomOrder();
+};
+
+function followProjectedLCD() {
+  projectedOrderFrame = 0;
+  if (spaceOrderOverlay.hidden || !spaceDialog.open) return;
+  positionProjectedOrder();
+  projectedOrderFrame = requestAnimationFrame(followProjectedLCD);
+}
+
+spaceOrderButton.textContent = 'Usar a tela do totem 3D ↗';
+spaceOrderButton.onclick = () => {
+  if (!spaceViewer?.loaded) return;
+  spSetMode('look');
+  if (freeOrbit) setFreeOrbit(false);
+  spaceOrderOverlay.hidden = false;
+  spaceStage.classList.add('space-live-lcd');
+  spaceStage.append(orderLayer);
+  followProjectedLCD();
+  spaceOrderBack.focus({preventScroll:true});
+};
+
+function cleanProjectedLCD() {
+  cancelAnimationFrame(projectedOrderFrame);
+  projectedOrderFrame = 0;
+  spaceStage.classList.remove('space-live-lcd');
+}

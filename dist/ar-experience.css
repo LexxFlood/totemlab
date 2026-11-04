@@ -42,3 +42,10 @@ body.space-open{overflow:hidden}#space-dialog{width:min(1160px,calc(100vw - 40px
     to { clip-path: inset(0); }
   }
 }
+
+#space-stage.space-live-lcd { touch-action: pan-y; }
+#space-stage.space-live-lcd #kiosk-screen-layer { position: absolute; z-index: 3; }
+#space-stage.space-live-lcd #kiosk-screen { touch-action: pan-y; }
+#space-viewer [data-order-corner] { width: 0; height: 0; pointer-events: none; }
+.space-order-overlay { background: transparent; pointer-events: none; }
+.space-order-close, .space-order-paper { pointer-events: auto; }
