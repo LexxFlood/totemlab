@@ -1,0 +1,5 @@
+TOTEMLAB
+Site: index.html
+Configurador: configurador.html
+Execute em servidor HTTP local ou publique em HTTPS para câmera, AR e instalação.
+O resumo do projeto é gerado localmente, sem envio comercial.

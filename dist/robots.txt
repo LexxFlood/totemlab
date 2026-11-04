@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://totem-studio-3d-alber.albert7pereira.chatgpt.site/sitemap.xml
