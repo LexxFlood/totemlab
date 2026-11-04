@@ -28,12 +28,77 @@ function tlChange(id,value,event='change'){const e=tlId(id);e.value=value;e.disp
 document.querySelectorAll('[data-model]').forEach(b=>b.onclick=()=>tlChange('totem-model',b.dataset.model));document.querySelectorAll('[data-material]').forEach(b=>b.onclick=()=>tlChange('housing',b.dataset.material));document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>tlChange('acrylic-color',b.dataset.color,'input'));
 function tlSync(){const name='Totem '+(totemModel==='slim'?'Slim':'Classic'),finish={wood:'Madeira branca',acrylicWhite:'Acrílico colorido',acrylic:'Acrílico transparente'}[housing];document.querySelectorAll('[data-model]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.model===totemModel));document.querySelectorAll('[data-material]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.material===housing));document.querySelectorAll('[data-color]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.color.toLowerCase()===acrylicColor.toLowerCase()));tlId('tl-colors').hidden=housing==='wood';tlId('tl-color-name').textContent=acrylicColor.toUpperCase();tlId('tl-summary-title').textContent=name;tlId('tl-stage-name').textContent=name;tlId('tl-summary-finish').textContent=finish;tlId('tl-stage-finish').textContent=finish;tlId('acrylic-colors').hidden=false;tlId('housing-note').textContent=housing==='wood'?'Painéis de 18 mm com acabamento branco e espessura visível nos recortes.':housing==='acrylic'?'Acrílico translúcido de 6 mm para explorar o interior do modelo.':'Acrílico colorido de 6 mm com bordas polidas.';tlId('acrylic-preset').value=[...tlId('acrylic-preset').options].some(o=>o.value===acrylicColor)?acrylicColor:'custom';document.querySelector('#acrylic-colors>label').textContent='Escolha uma cor ou crie a sua';document.querySelectorAll('[data-material="acrylicWhite"] .tl-material-icon').forEach(e=>e.style.background=acrylicColor)}
 tlPanel.addEventListener('input',tlSync);tlPanel.addEventListener('change',tlSync);const tlApply=applyConfig;applyConfig=function(c){tlApply(c);tlSync()};
-const tlZoom=zoomToOrder;zoomToOrder=function(enabled){if(!enabled)window.orderFullscreen=false;tlZoom(enabled);document.body.classList.toggle('tl-demo-mode',enabled);tlId('tl-design').setAttribute('aria-pressed',!enabled);tlId('tl-demo').setAttribute('aria-pressed',enabled);tlId('tl-expand-order').textContent=window.orderFullscreen?'Ver no totem':'Ampliar tela ↗';positionOrderScreen()};
-tlId('tl-design').onclick=()=>zoomToOrder(false);tlId('tl-demo').onclick=()=>zoomToOrder(true);
-tlId('tl-expand-order').onclick=()=>tlSetFullscreen(!window.orderFullscreen);
-function tlSetFullscreen(enabled){window.orderFullscreen=!!enabled;document.body.classList.toggle('tl-screen-full',!!enabled);if(enabled&&!window.kioskView)zoomToOrder(true);tlId('tl-expand-order').textContent=enabled?'Ver no totem':'Ampliar tela ↗';tlId('tl-screen-toggle').textContent=enabled?'Ver no totem':'Ampliar tela ↗';positionOrderScreen()}
-const tlScreenToggle=document.createElement('button');tlScreenToggle.id='tl-screen-toggle';tlScreenToggle.textContent='Ampliar tela ↗';document.body.append(tlScreenToggle);tlScreenToggle.onclick=()=>tlSetFullscreen(!window.orderFullscreen);
-const tlPosition=positionOrderScreen;positionOrderScreen=function(){if(!window.orderFullscreen){document.body.classList.remove('tl-screen-full');tlPosition();return}const width=innerWidth,height=innerHeight,top=92,bottom=matchMedia('(max-width:760px)').matches?92:28;const areaWidth=width>760?width-365:width;const left=width>760?365:0;const ratio=Math.min((areaWidth-24)/720,(height-top-bottom)/1440);orderLayer.style.display='block';Object.assign(orderLayer.style,{left:left+'px',top:top+'px',width:areaWidth+'px',height:(height-top-bottom)+'px'});orderPlane.style.transform=`matrix(${ratio},0,0,${ratio},${(areaWidth-720*ratio)/2},0)`};
+let freeOrbit = false;
+const tlZoom = zoomToOrder;
+zoomToOrder = function(enabled) {
+  if (enabled && freeOrbit) setFreeOrbit(false);
+  if (!enabled) tlSetFullscreen(false);
+  document.body.classList.toggle('tl-demo-mode', enabled);
+  tlZoom(enabled);
+  tlId('tl-design').setAttribute('aria-pressed', !enabled);
+  tlId('tl-demo').setAttribute('aria-pressed', enabled);
+  positionOrderScreen();
+};
+
+tlId('tl-design').onclick = () => zoomToOrder(false);
+tlId('tl-demo').onclick = () => zoomToOrder(true);
+tlId('tl-expand-order').onclick = toggleOrderFullscreen;
+
+function tlSetFullscreen(enabled) {
+  const wasFullscreen = window.orderFullscreen;
+  window.orderFullscreen = enabled;
+  document.body.classList.toggle('tl-screen-full', enabled);
+  tlId('tl-expand-order').textContent = enabled ? 'Sair da tela cheia' : 'Tela cheia ↗';
+  tlScreenToggle.textContent = enabled ? 'Sair da tela cheia ×' : 'Tela cheia ↗';
+  tlScreenToggle.setAttribute('aria-pressed', String(enabled));
+  if (wasFullscreen && !enabled && document.fullscreenElement === document.documentElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+  positionOrderScreen();
+}
+
+function toggleOrderFullscreen() {
+  const enabled = !window.orderFullscreen;
+  if (enabled && !document.body.classList.contains('tl-demo-mode')) zoomToOrder(true);
+  tlSetFullscreen(enabled);
+  if (enabled && document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+}
+
+const tlScreenToggle = document.createElement('button');
+tlScreenToggle.id = 'tl-screen-toggle';
+tlScreenToggle.type = 'button';
+tlScreenToggle.textContent = 'Tela cheia ↗';
+tlScreenToggle.setAttribute('aria-pressed', 'false');
+document.body.append(tlScreenToggle);
+tlScreenToggle.onclick = toggleOrderFullscreen;
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && window.orderFullscreen) tlSetFullscreen(false);
+});
+
+const tlPosition = positionOrderScreen;
+positionOrderScreen = function() {
+  if (!document.body.classList.contains('tl-demo-mode')) {
+    tlPosition();
+    return;
+  }
+  const full = window.orderFullscreen;
+  const mobile = matchMedia('(max-width:760px)').matches;
+  const panel = document.querySelector('.tl-demo-panel');
+  const left = full || mobile ? 0 : panel.getBoundingClientRect().right;
+  const top = full ? 60 : mobile ? 120 : 132;
+  const width = Math.max(1, innerWidth - left);
+  const height = Math.max(1, innerHeight - top - (!full && mobile ? 76 : 12));
+  const ratio = Math.max(.001, Math.min((width - 24) / 720, height / 1440));
+  Object.assign(orderLayer.style, {
+    display: 'block', left: left + 'px', top: top + 'px',
+    width: width + 'px', height: height + 'px'
+  });
+  orderPlane.style.transform = `matrix(${ratio},0,0,${ratio},${(width - 720 * ratio) / 2},${(height - 1440 * ratio) / 2})`;
+};
+addEventListener('resize', () => positionOrderScreen());
+
 const tlOriginalPrint=window.printOrderReceipt;window.printOrderReceipt=function(order){tlSetFullscreen(false);document.body.classList.remove('tl-demo-mode');tlOriginalPrint(order)};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.orderFullscreen)tlSetFullscreen(false)});document.addEventListener('click',e=>{if(!tlTools.contains(e.target))tlTools.open=false});
 const tlControls=controls;controls=function(open){if(open&&window.kioskView)zoomToOrder(false);tlControls(open);if(open)tlId('tl-tab-'+tlStep).focus({preventScroll:true})};document.addEventListener('keydown',e=>{if(e.key==='Escape')tlTools.open=false});
@@ -59,7 +124,7 @@ window.addEventListener('message', event => {
 
 // Keep the touchscreen usable while offering an explicit orbit mode.
 const orbitTools=document.createElement('div');orbitTools.className='tl-orbit-tools';orbitTools.innerHTML='<button id="tl-orbit-mode" aria-pressed="false">Explorar 3D</button><button id="tl-orbit-reset" hidden>Centralizar</button><small id="tl-orbit-help" hidden>Arraste para girar · pinça para zoom · dois dedos para mover</small>';document.body.append(orbitTools);
-let freeOrbit=false;
+
 function setFreeOrbit(enabled){freeOrbit=enabled;document.body.classList.toggle('tl-free-orbit',enabled);document.getElementById('tl-orbit-mode').setAttribute('aria-pressed',enabled);document.getElementById('tl-orbit-mode').textContent=enabled?'Usar tela do totem':'Explorar 3D';document.getElementById('tl-orbit-reset').hidden=!enabled;document.getElementById('tl-orbit-help').hidden=!enabled;if(enabled){tlSetFullscreen(false);zoomToOrder(false);window.receiptView=null;window.kioskView=null;}draw()}
-document.getElementById('tl-orbit-mode').onclick=()=>setFreeOrbit(!freeOrbit);document.getElementById('tl-orbit-reset').onclick=()=>{window.tlPanX=0;window.tlPanY=0;az=.45;el=.15;scale=totemModel==='slim'?1.06:showSupport?1.25:.94;draw()};
+document.getElementById('tl-orbit-mode').onclick=()=>{if(freeOrbit)zoomToOrder(true);else setFreeOrbit(true)};document.getElementById('tl-orbit-reset').onclick=()=>{window.tlPanX=0;window.tlPanY=0;az=.45;el=.15;scale=totemModel==='slim'?1.06:showSupport?1.25:.94;draw()};
 const orbitMove=canvas.onpointermove;canvas.onpointermove=e=>{if(freeOrbit&&pointers.has(e.pointerId)){const old=pointers.get(e.pointerId);if(pointers.size===2){window.tlPanX=(window.tlPanX||0)-(e.clientX-old[0])/canvas.clientHeight*scale;window.tlPanY=(window.tlPanY||0)+(e.clientY-old[1])/canvas.clientHeight*scale}else if(e.shiftKey||e.buttons===2){window.tlPanX=(window.tlPanX||0)-(e.clientX-old[0])/canvas.clientHeight*scale*2;window.tlPanY=(window.tlPanY||0)+(e.clientY-old[1])/canvas.clientHeight*scale*2;pointers.set(e.pointerId,[e.clientX,e.clientY]);draw();return}}orbitMove(e)};canvas.addEventListener('contextmenu',e=>{if(freeOrbit)e.preventDefault()});
