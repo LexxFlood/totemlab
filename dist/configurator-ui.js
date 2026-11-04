@@ -17,11 +17,22 @@ const tlBadge=document.createElement('div');tlBadge.className='tl-stage-badge';t
 const tlDemoPanel=document.createElement('aside');tlDemoPanel.className='tl-demo-panel';tlDemoPanel.innerHTML=`<span class="tl-eyebrow">EXPERIMENTE NA PRÁTICA</span><h2>O próximo pedido<br>é seu.</h2><p>Teste a experiência que seus clientes podem ter.</p><ol><li><span>01</span>Escolha e personalize os produtos.</li><li><span>02</span>Revise o pedido e simule o pagamento.</li><li><span>03</span>Veja o comprovante sair do totem.</li></ol><div class="tl-demo-summary"><small>SEU PEDIDO DEMONSTRATIVO</small><strong id="tl-cart-summary">Nenhum item ainda</strong></div><button id="tl-expand-order">Ampliar tela ↗</button><button id="tl-restart-order">Recomeçar pedido</button><small class="tl-demo-disclaimer">Ambiente demonstrativo, sem cobrança.</small>`;document.body.append(tlDemoPanel);
 const tlMode=document.createElement('div');tlMode.className='tl-mode-switch';tlMode.setAttribute('aria-label','Modo do estúdio');tlMode.innerHTML='<button id="tl-design" aria-pressed="true">Personalizar</button><button id="tl-demo" aria-pressed="false">Testar atendimento</button>';document.querySelector('.app-header').insertBefore(tlMode,document.querySelector('.app-actions'));
 const tlTools=document.createElement('details');tlTools.className='tl-tools';tlTools.innerHTML='<summary aria-label="Mais opções">•••</summary><div></div>';['save-image','share-app','install-app'].forEach(id=>tlTools.querySelector('div').append(tlId(id)));document.querySelector('.app-actions').append(tlTools);
+for (const [label, action] of [
+  ['Ver no meu espaço', () => tlId('space-launch').click()],
+  ['Meu projeto', () => document.querySelector('.app-actions .quote-action').click()]
+]) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'tl-mobile-menu-action';
+  button.textContent = label;
+  button.onclick = () => { tlTools.open = false; action(); };
+  tlTools.querySelector('div').prepend(button);
+}
 const tlHome=document.createElement('a');tlHome.href='./';tlHome.target='_top';tlHome.textContent='Voltar ao site ↗';tlTools.querySelector('div').append(tlHome);
 const tlMenuReset=document.createElement('button');tlMenuReset.textContent='Recomeçar demonstração';tlMenuReset.onclick=()=>{tlId('tl-restart-order').click();tlTools.open=false};tlTools.querySelector('div').prepend(tlMenuReset);
 tlId('launch-order').hidden=true;document.querySelector('.brand span').textContent='ESTÚDIO DE PERSONALIZAÇÃO';
 let tlStep=0;
-function tlSetStep(step){tlStep=Math.max(0,Math.min(2,step));document.querySelectorAll('.tl-tabs button').forEach((b,i)=>{b.setAttribute('aria-selected',i===tlStep);b.tabIndex=i===tlStep?0:-1;tlId('tl-step-'+i).hidden=i!==tlStep});tlId('tl-next').textContent=['Escolher acabamento →','Explorar detalhes →','Usar no meu projeto ↗'][tlStep];tlPanel.scrollTop=0}
+function tlSetStep(step){tlStep=Math.max(0,Math.min(2,step));document.querySelectorAll('.tl-tabs button').forEach((b,i)=>{b.setAttribute('aria-selected',i===tlStep);b.tabIndex=i===tlStep?0:-1;tlId('tl-step-'+i).hidden=i!==tlStep});tlId('tl-next').textContent=['Escolher acabamento →','Explorar detalhes →','Usar no meu projeto ↗'][tlStep];tlPanel.querySelector('.tl-panels').scrollTop=0;tlPanel.scrollTop=0}
 document.querySelectorAll('[data-step]').forEach(b=>{b.onclick=()=>tlSetStep(Number(b.dataset.step));b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();tlSetStep(e.key==='Home'?0:e.key==='End'?2:(tlStep+(e.key==='ArrowRight'?1:2))%3);tlId('tl-tab-'+tlStep).focus()}});
 tlId('tl-next').onclick=()=>{if(tlStep<2)tlSetStep(tlStep+1);else document.querySelector('.quote-action').click()};
 function tlChange(id,value,event='change'){const e=tlId(id);e.value=value;e.dispatchEvent(new Event(event,{bubbles:true}));tlSync();saveConfig();notifySite()}
@@ -87,9 +98,9 @@ positionOrderScreen = function() {
   const mobile = matchMedia('(max-width:760px)').matches;
   const panel = document.querySelector('.tl-demo-panel');
   const left = full || mobile ? 0 : panel.getBoundingClientRect().right;
-  const top = full ? 60 : mobile ? 120 : 132;
+  const top = full ? 60 : mobile ? 158 : 132;
   const width = Math.max(1, innerWidth - left);
-  const height = Math.max(1, innerHeight - top - (!full && mobile ? 76 : 12));
+  const height = Math.max(1, innerHeight - top - 12);
   const ratio = Math.max(.001, Math.min((width - 24) / 720, height / 1440));
   Object.assign(orderLayer.style, {
     display: 'block', left: left + 'px', top: top + 'px',
