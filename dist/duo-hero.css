@@ -147,3 +147,27 @@
 @media (max-width: 640px) {
   .hero-opening .duo-product { grid-template-rows: clamp(190px, 64vw, 290px); }
 }
+
+#totens .product-visual {
+  height: auto;
+  aspect-ratio: 3 / 2;
+  position: relative;
+}
+
+#totens .product-visual img {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+}
+
+#totens .product-index {
+  color: #3d2a20;
+  background: #fff9eeed;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+#totens .product-tag {
+  z-index: 1;
+  background: #fff9eeed;
+}
