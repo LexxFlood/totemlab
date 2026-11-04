@@ -9,6 +9,13 @@ const params=new URLSearchParams(location.search);if(params.has('model')&&!param
 $('.menu-btn').onclick=()=>{const open=$('#navigation').classList.toggle('open');$('.menu-btn').setAttribute('aria-expanded',open)};
 $$('#navigation a').forEach(a=>a.onclick=()=>{$('#navigation').classList.remove('open');$('.menu-btn').setAttribute('aria-expanded','false')});
 const hero=$('#hero-model');$$('[data-hero]').forEach(b=>b.onclick=()=>{const slim=b.dataset.hero==='slim';hero.src='./ar-models/'+(slim?'totem_slim_madeira_branca':'totem_com_suporte_madeira_branca')+'.glb?v=burger2';hero.alt='Modelo 3D do Totem '+(slim?'Slim':'Classic');$$('[data-hero]').forEach(v=>v.setAttribute('aria-pressed',String(v===b)))});
+function introduceHeroModel() {
+  hero.classList.add('hero-model-enter');
+}
+
+if (hero.loaded) introduceHeroModel();
+else hero.addEventListener('load', introduceHeroModel, {once: true});
+
 hero.addEventListener('error',()=>{$('#hero-hint').textContent='Modelo indisponível. Tente recarregar.'});
 function openLab(c){if(c)setConfig(c);const frame=$('#config-frame');if(!frame.src){frame.src=configPath(selected)}else if(c){frame.contentWindow.postMessage({type:'totemlab:apply',config:selected},location.origin)}frame.hidden=false;$('#lab-poster').hidden=true;$('#laboratorio').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
 $('#start-lab').onclick=()=>openLab();$$('[data-configure]').forEach(b=>b.onclick=()=>openLab({...selected,model:b.dataset.configure,support:b.dataset.configure==='classic'?1:0}));
