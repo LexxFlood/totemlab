@@ -8,15 +8,6 @@ try{const saved=JSON.parse(localStorage.getItem('totem-studio-config'));if(saved
 const params=new URLSearchParams(location.search);if(params.has('model')&&!params.has('quote'))location.replace('./configurador.html?'+params.toString());if(params.has('quote')){try{setConfig(JSON.parse(params.get('quote')))}catch{}requestAnimationFrame(()=>$('#orcamento').scrollIntoView())}else setConfig(selected);
 $('.menu-btn').onclick=()=>{const open=$('#navigation').classList.toggle('open');$('.menu-btn').setAttribute('aria-expanded',open)};
 $$('#navigation a').forEach(a=>a.onclick=()=>{$('#navigation').classList.remove('open');$('.menu-btn').setAttribute('aria-expanded','false')});
-const hero=$('#hero-model');$$('[data-hero]').forEach(b=>b.onclick=()=>{const slim=b.dataset.hero==='slim';hero.src='./ar-models/'+(slim?'totem_slim_madeira_branca':'totem_com_suporte_madeira_branca')+'.glb?v=burger2';hero.alt='Modelo 3D do Totem '+(slim?'Slim':'Classic');$$('[data-hero]').forEach(v=>v.setAttribute('aria-pressed',String(v===b)))});
-function introduceHeroModel() {
-  hero.classList.add('hero-model-enter');
-}
-
-if (hero.loaded) introduceHeroModel();
-else hero.addEventListener('load', introduceHeroModel, {once: true});
-
-hero.addEventListener('error',()=>{$('#hero-hint').textContent='Modelo indisponível. Tente recarregar.'});
 function openLab(c, shouldScroll = true){if(c)setConfig(c);const frame=$('#config-frame');if(!frame.src){frame.src=configPath(selected)}else if(c){frame.contentWindow.postMessage({type:'totemlab:apply',config:selected},location.origin)}frame.hidden=false;$('#lab-poster').hidden=true;if (shouldScroll) $('#laboratorio').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
 $('#start-lab').onclick=()=>openLab();$$('[data-configure]').forEach(b=>b.onclick=()=>openLab({...selected,model:b.dataset.configure,support:b.dataset.configure==='classic'?1:0}));
 window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==$('#config-frame').contentWindow)return;if(e.data?.type==='totemlab:config'||e.data?.type==='totemlab:quote'){setConfig(e.data.config);if(e.data.type==='totemlab:quote')$('#orcamento').scrollIntoView({behavior:'smooth'})}});
