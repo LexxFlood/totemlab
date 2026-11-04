@@ -320,3 +320,65 @@ function cleanProjectedLCD() {
   projectedOrderFrame = 0;
   spaceStage.classList.remove('space-live-lcd');
 }
+
+// Keep native AR available independently of the optional guided demo.
+const quickLookLink = document.createElement('a');
+quickLookLink.rel = 'ar';
+if (quickLookLink.relList.supports('ar')) {
+  const prepare = document.createElement('button');
+  prepare.type = 'button';
+  prepare.className = 'space-primary';
+  prepare.textContent = 'Preparar demonstração no Quick Look';
+  const poster = document.createElement('img');
+  poster.alt = 'Abrir demonstração de pedido no Quick Look';
+  poster.width = 44;
+  poster.height = 44;
+  quickLookLink.append(poster);
+  quickLookLink.hidden = true;
+  quickLookLink.setAttribute('aria-label', poster.alt);
+  quickLookLink.title = poster.alt;
+  spEl('space-ar').after(prepare, quickLookLink);
+  const launchHint = document.createElement('p');
+  launchHint.hidden = true;
+  quickLookLink.after(launchHint);
+  let demoURL, generation = 0;
+  spaceDialog.addEventListener('close', () => {
+    generation++;
+    if (demoURL) URL.revokeObjectURL(demoURL);
+    demoURL = undefined;
+    quickLookLink.hidden = true;
+    launchHint.hidden = true;
+    prepare.hidden = false;
+    prepare.disabled = false;
+  });
+  prepare.onclick = async () => {
+    if (!spaceViewer?.loaded) {
+      spaceMessage('Aguarde o carregamento do totem e tente novamente.');
+      return;
+    }
+    const current = ++generation;
+    prepare.disabled = true;
+    spaceMessage('Preparando o pedido de demonstração…');
+    try {
+      const slim = totemModel === 'slim';
+      const {prepareQuickLookDemo} = await import('./quicklook-demo.js');
+      const url = await prepareQuickLookDemo(spaceViewer, slim);
+      if (current !== generation) { URL.revokeObjectURL(url); return; }
+      demoURL = url;
+      poster.src = slim ? './assets/slim.png' : './assets/classic.png';
+      quickLookLink.href = url;
+      quickLookLink.download = 'totemlab-pedido-demo.usdz';
+      quickLookLink.hidden = false;
+      prepare.hidden = true;
+      launchHint.textContent = 'Toque na imagem do totem para abrir a demonstração. Na RA, toque no visor para iniciar o pedido e ver a notinha sair.';
+      launchHint.hidden = false;
+      spaceMessage('Demonstração pronta.');
+      quickLookLink.focus();
+    } catch (error) {
+      if (current === generation) spaceMessage('Não foi possível preparar a demonstração. Tente novamente.');
+      console.warn('Quick Look demo:', error);
+    } finally {
+      if (current === generation) prepare.disabled = false;
+    }
+  };
+}
