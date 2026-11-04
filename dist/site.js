@@ -22,12 +22,34 @@ const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 if(!reduced.matches&&'IntersectionObserver'in window){const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('revealed');io.unobserve(e.target)}}),{threshold:.12});$$('.section-head,.product,.service-row,.process-grid>div,.quote-info,.quote-form,.faq details').forEach(e=>{e.classList.add('reveal');io.observe(e)})}
 const scene=$('#story-model'),story=$('#design-story'),chapters=$$('[data-chapter]');let ticking=false,lastChapter=-1;
 let storyProgress=0,storyKind='';
+const storyFallback = $('.story-model-fallback');
+const storyStage = scene.parentElement;
+
+async function verifyStoryRender() {
+  const source = scene.src;
+  try {
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const frame = new Image();
+    frame.src = scene.toDataURL('image/png');
+    await frame.decode();
+    if (scene.src !== source) return;
+    const sample = document.createElement('canvas');
+    sample.width = sample.height = 24;
+    const ctx = sample.getContext('2d', {willReadFrequently:true});
+    ctx.drawImage(frame, 0, 0, 24, 24);
+    const pixels = ctx.getImageData(0, 0, 24, 24).data;
+    if (pixels.some((value, index) => index % 4 === 3 && value > 96)) storyStage.classList.add('story-rendered');
+  } catch {
+    // The product image remains visible if the browser cannot render the model.
+  }
+}
+
 function updateScroll(){ticking=false;const available=document.documentElement.scrollHeight-innerHeight;$('#scroll-progress').style.transform=`scaleX(${available>0?scrollY/available:0})`;if(!story)return;const rect=story.getBoundingClientRect();if(rect.bottom<0||rect.top>innerHeight)return;storyProgress=Math.max(0,Math.min(1,-rect.top/Math.max(1,rect.height-innerHeight)));const mobile = matchMedia('(max-width: 900px)').matches;
 const readingLine = mobile ? scene.parentElement.getBoundingClientRect().bottom + 36 : innerHeight * .53;
 const current = chapters.findIndex(chapter => chapter.getBoundingClientRect().bottom > readingLine);
-const active = current === -1 ? chapters.length - 1 : current;const kind=storyProgress<.5?'slim':'classic';if(kind!==storyKind){storyKind=kind;scene.src='./ar-models/'+(kind==='slim'?'totem_slim_acrilico_branco':'totem_com_suporte_madeira_branca')+'.glb?v=burger2'}chapters.forEach((c,i)=>c.classList.toggle('active',i===active));const count=$('#story-count');const label='0'+(active+1)+' / 03';if(count.textContent!==label)count.textContent=label;$('#story-caption').textContent=kind==='slim'?'Totem Slim · explore todos os ângulos.':'Totem Classic · uma nova forma, uma volta completa.';const local=kind==='slim'?storyProgress*2:(storyProgress-.5)*2;scene.cameraOrbit=`${-30+local*360}deg 82deg auto`;scene.fieldOfView='29deg';scene.jumpCameraToGoal();applyStoryColor();}
+const active = current === -1 ? chapters.length - 1 : current;const kind=storyProgress<.5?'slim':'classic';if(kind!==storyKind){storyKind=kind;storyStage.classList.remove('story-rendered');storyFallback.src='./assets/'+kind+'.png';scene.src='./ar-models/'+(kind==='slim'?'totem_slim_acrilico_branco':'totem_com_suporte_madeira_branca')+'.glb?v=burger2'}chapters.forEach((c,i)=>c.classList.toggle('active',i===active));const count=$('#story-count');const label='0'+(active+1)+' / 03';if(count.textContent!==label)count.textContent=label;$('#story-caption').textContent=kind==='slim'?'Totem Slim · explore todos os ângulos.':'Totem Classic · uma nova forma, uma volta completa.';const local=kind==='slim'?storyProgress*2:(storyProgress-.5)*2;scene.cameraOrbit=`${-30+local*360}deg 82deg auto`;scene.fieldOfView='29deg';scene.jumpCameraToGoal?.();applyStoryColor();}
 function applyStoryColor(){if(!scene.model)return;const t=Math.min(1,storyProgress*4);const white=[.88,.89,.91],orange=[1,.102,.014];const color=white.map((v,i)=>v+(orange[i]-v)*t);scene.model.materials.filter(m=>/^Carcaca/.test(m.name)).forEach(m=>m.pbrMetallicRoughness.setBaseColorFactor([...color,1]));}
-scene.addEventListener('load',()=>{updateScroll();applyStoryColor()});scene.addEventListener('error',()=>{$('#story-caption').textContent='Abra o configurador para explorar os detalhes.'});
+scene.addEventListener('load',()=>{updateScroll();applyStoryColor();verifyStoryRender()});scene.addEventListener('error',()=>{$('#story-caption').textContent='Abra o configurador para explorar os detalhes.'});
 window.addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(updateScroll)}},{passive:true});window.addEventListener('resize',updateScroll);updateScroll();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 

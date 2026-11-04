@@ -90,3 +90,24 @@
     to { transform: none; }
   }
 }
+
+.story-model-fallback {
+  position: absolute;
+  top: 45px;
+  left: 50%;
+  width: min(40%, 490px);
+  height: calc(100% - 110px);
+  transform: translateX(-50%);
+  object-fit: contain;
+}
+
+.story-rendered .story-model-fallback { visibility: hidden; }
+.story-scene:not(.story-rendered) model-viewer { opacity: 0; }
+
+@media (max-width: 900px) {
+  .story-model-fallback {
+    top: 26px;
+    width: 85%;
+    height: calc(100% - 66px);
+  }
+}
